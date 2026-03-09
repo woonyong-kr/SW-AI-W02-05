@@ -10,9 +10,14 @@ for i in range(len(context)):
     else:
         alphabet[context[i]] += 1
 
-alphabet = sorted(alphabet.items(), key = lambda item : item[1], reverse = True)
 
-if len(alphabet) >= 2 and alphabet[0][1] == alphabet[1][1]:
+counts = list(alphabet.values())
+max_val = max(counts)
+
+if counts.count(max_val) >= 2:
     print("?")
 else:
-    print(alphabet[0][0].upper())
+    for char, count in alphabet.items():
+        if count == max_val:
+            print(char.upper())
+
