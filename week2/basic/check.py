@@ -7,7 +7,7 @@
   예: python check.py python_basic.py
 
 또는 모든 문제 채점:
-  python check.py --all
+  python3 check.py --all
 """
 
 import sys
