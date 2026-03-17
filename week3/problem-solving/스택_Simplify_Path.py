@@ -3,7 +3,7 @@
 class Solution:
     def simplifyPath(self, path: str) -> str:
         
-        names = deque(path.split("/"))
+        names = deque(path.split("/")) # pyright: ignore[reportUndefinedVariable]
         stack = []
 
         for name in names:

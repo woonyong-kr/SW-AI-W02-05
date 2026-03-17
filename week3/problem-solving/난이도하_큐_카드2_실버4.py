@@ -6,7 +6,8 @@ from collections import deque
 
 def solution():
     data = sys.stdin.read().split()
-    if not data: return
+    if not data:
+         return
 
     n = int(data[0])
     cards = deque([i for i in range(1, n + 1)])

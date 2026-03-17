@@ -6,9 +6,9 @@
 #         self.val = val
 #         self.next = next
 class Solution:
-    def addTwoNumbers(self, l1: Optional[ListNode], l2: Optional[ListNode]) -> Optional[ListNode]:
+    def addTwoNumbers(self, l1: Optional[ListNode], l2: Optional[ListNode]) -> Optional[ListNode]: # pyright: ignore[reportUndefinedVariable]
 
-        dummy = ListNode(0)
+        dummy = ListNode(0) # pyright: ignore[reportUndefinedVariable]
         curr = dummy
         carry = 0
 
@@ -19,7 +19,7 @@ class Solution:
             total = val1 + val2 + carry
             carry = total // 10
             
-            curr.next = ListNode(total % 10)
+            curr.next = ListNode(total % 10) # pyright: ignore[reportUndefinedVariable]
             curr = curr.next
 
             if l1:

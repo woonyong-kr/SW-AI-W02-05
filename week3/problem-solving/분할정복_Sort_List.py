@@ -1,11 +1,11 @@
-#https://leetcode.com/problems/sort-list/?envType=study-plan-v2&envId=top-interview-150
+#
 # Definition for singly-linked list.
 # class ListNode:
 #     def __init__(self, val=0, next=None):
 #         self.val = val
 #         self.next = next
 class Solution:
-    def sortList(self, head: Optional[ListNode]) -> Optional[ListNode]:
+    def sortList(self, head: Optional[ListNode]) -> Optional[ListNode]: # pyright: ignore[reportUndefinedVariable]
 
         if not head or not head.next:
             return head
@@ -14,8 +14,8 @@ class Solution:
 
         return self.merge(self.sortList(head), self.sortList(mid))
     
-    def merge(self, head: Optional[ListNode], mid: Optional[ListNode]):
-        dummy = ListNode()
+    def merge(self, head: Optional[ListNode], mid: Optional[ListNode]): # pyright: ignore[reportUndefinedVariable]
+        dummy = ListNode() # pyright: ignore[reportUndefinedVariable]
         curr = dummy
 
         while head and mid:
@@ -29,7 +29,7 @@ class Solution:
         curr.next = head if head else mid
         return dummy.next
 
-    def getMid(self, head: Optional[ListNode]):
+    def getMid(self, head: Optional[ListNode]): # pyright: ignore[reportUndefinedVariable]
         slow, fast = head, head.next
         while fast and fast.next:
             slow = slow.next
