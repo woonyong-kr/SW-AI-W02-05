@@ -1,9 +1,17 @@
 import heapq
 
+import math
+
+def heuristic_func(node, goal):
+    x1, y1 = node
+    x2, y2 = goal
+    return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+
 def greedy_best_first(graph, start, goal, heuristic_func):
-    # 방문 여부 및 경로 추적
+    # 방문했던 노드가 아니라면 등록
     visited = set()
-    pq = [(heuristic_func(start, goal), start)]  # (h(n), node)
+
+    pq = [(heuristic_func(start, goal), start)] 
     
     while pq:
         _, curr_node = heapq.heappop(pq)

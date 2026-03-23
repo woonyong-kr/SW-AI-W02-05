@@ -1,9 +1,8 @@
 def depth_limited_search(graph, node, target, limit, visited):
-    """
-    특정 깊이(limit)까지만 파고드는 DFS
-    """
+    
     if node == target:
         return True
+    
     if limit <= 0:
         return False
     

@@ -1,20 +1,20 @@
 import heapq
 
 def dijkstra(graph, start):
-    # 1. 거리 저장소 (모든 노드 거리를 무한대로 초기화)
+    # 조건 / 모든 노드 거리를 무한대로 초기화
     distances = {node: float('inf') for node in graph}
     distances[start] = 0
     
-    # 2. 우선순위 큐 (거리, 노드) - 거리가 짧은 순으로 정렬됨
+    # 거리가 짧은 순으로 정렬
     pq = [(0, start)]
     
     while pq:
         curr_dist, curr_node = heapq.heappop(pq)
         
-        # 이미 처리된 노드라면 스킵 (우녕님이 고민한 재할당/중복 방지)
+        # 조건 / 이미 처리된 노드라면 스킵 / 갈수 없는 길이라면 스킵
         if curr_dist > distances[curr_node]:
             continue
-            
+    
         for neighbor, weight in graph[curr_node].items():
             distance = curr_dist + weight
             
