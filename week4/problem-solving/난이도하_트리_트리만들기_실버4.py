@@ -22,11 +22,4 @@ def solution():
     for edge in result:
         print(f"{edge[0]} {edge[1]}")
 
-
-# 0 1 
-# 0 2
-# 0 3
-# 3 4
-# 4 5
-
 solution()
