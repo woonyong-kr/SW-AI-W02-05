@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>알고리즘 웹 시각화 (하이엔드 분석 엔진)</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+    <style>
+        body {
+            margin: 0; padding: 0;
+            background-color: #0b0f19; color: #ffffff;
+            font-family: 'Pretendard', sans-serif;
+            overflow: hidden;
+            display: flex; flex-direction: column;
+            height: 100vh;
+        }
+
+        #header {
+            padding: 15px 30px;
+            background: rgba(20, 25, 40, 0.95);
+            border-bottom: 1px solid #2a3550;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        h1 { margin: 0; font-size: 22px; font-weight: 600; color: #00f2fe; }
+
+        .toolbar { display: flex; align-items: center; gap: 15px; }
+
+        select, button, input[type=range] {
+            background: #1e293b; color: white; border: 1px solid #475569;
+            padding: 8px 16px; border-radius: 6px; font-size: 14px; cursor: pointer;
+            outline: none;
+        }
+
+        button { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border: none; font-weight: bold; }
+        button:hover { filter: brightness(1.2); }
+        button.btn-red { background: linear-gradient(135deg, #9f1239 0%, #e11d48 100%); }
+
+        .slider-box { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+
+        #mynetwork { flex: 1; width: 100%; height: calc(100vh - 70px); position: relative; }
+
+        #hud {
+            position: absolute; bottom: 30px; left: 30px;
+            background: rgba(15, 20, 35, 0.9); border: 1px solid #334155; padding: 20px;
+            border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); min-width: 200px;
+        }
+
+        .hud-item { display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .hud-label { color: #94a3b8; font-size: 13px; }
+        .hud-value { font-weight: bold; color: #38bdf8; font-size: 15px; margin-left: 20px; text-align: right; }
+        
+        #loadingOverlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(11, 15, 25, 0.9); z-index: 50;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 24px; font-weight: bold; color: #00f2fe;
+            flex-direction: column;
+        }
+
+        .instruction { font-size: 14px; color: #ffeb3b; font-weight: 500; margin-left: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="loadingOverlay" style="display: none;">
+        <!-- 강제 계산을 사용하므로 이제 대기 화면이 거의 필요 없습니다 -->
+    </div>
+
+    <div id="header">
+        <h1>Graph Debugger Engine (유기적 네트워크)</h1>
+        <span class="instruction">마우스로 노드를 클릭하여 <b>[시작점]</b>과 <b>[종료점]</b>을 지정하세요!</span>
+        <div class="toolbar">
+            <select id="algoSelect">
+                <!-- 범용 그래프 탐색 (모든 맵 완벽 호환) -->
+                <option value="BFS">1. 너비 우선 탐색 (BFS)</option>
+                <option value="DFS">2. 깊이 우선 탐색 (DFS)</option>
+                <option value="DIJKSTRA">3. 다익스트라 (Dijkstra)</option>
+                <option value="GREEDY">4. 탐욕적 최우선 (Greedy Best-First)</option>
+                <option value="ASTAR">5. 에이스타 (A* Search)</option>
+                <option value="IDDFS">6. 반복 깊이심화 (IDDFS)</option>
+                <option value="IDASTAR">7. 반복 심화 A* (IDA*)</option>
+                <!-- 아래 3종은 타일 그리드나 특정 조건을 요하지만 시뮬레이션 호환 처리 -->
+                <option value="HPA">8. HPA* (계층형 A* 시뮬레이션)</option>
+                <option value="JPS">9. JPS (Jump Point 시뮬레이션)</option>
+                <option value="TOPO">10. 위상 정렬 (Topological - Directed 변환)</option>
+            </select>
+            <button id="btnStart" onclick="startAlgo()" style="opacity: 0.5; cursor: not-allowed;">▶ 시작 / 재생</button>
+            <button onclick="pauseAlgo()">⏸ 일시정지</button>
+            <button onclick="stepAlgo()">⏭ 한 스텝 진행</button>
+            <button class="btn-red" onclick="stopAlgo()">⏹ 초기화</button>
+            <div class="slider-box">
+                느림 <input type="range" id="speedSlider" min="0" max="1000" value="800" onchange="changeSpeed()"> 빠름
+            </div>
+        </div>
+    </div>
+
+    <div id="mynetwork"></div>
+
+    <div id="hud">
+        <div class="hud-item"><span class="hud-label">진행 상태</span><span class="hud-value" id="status">대기 중</span></div>
+        <div class="hud-item"><span class="hud-label" style="color:#4ade80">출발 노드 (Start)</span><span class="hud-value" id="start-node-status" style="color: #4ade80;">미지정</span></div>
+        <div class="hud-item"><span class="hud-label" style="color:#f87171">목표 노드 (Target)</span><span class="hud-value" id="end-node-status" style="color: #f87171;">미지정</span></div>
+        <hr style="border:0; border-top:1px solid #334155; margin: 10px 0;">
+        <div class="hud-item"><span class="hud-label">현재 탐색 (Magenta)</span><span class="hud-value" style="color:#f472b6;" id="current-node">-</span></div>
+        <div class="hud-item"><span class="hud-label">방문 완료 (Blue)</span><span class="hud-value" style="color:#60a5fa;" id="visited-count">0</span></div>
+        <hr style="border:0; border-top:1px solid #334155; margin: 10px 0;">
+        <div class="hud-item"><span class="hud-label" id="ds-label">오픈 자료구조</span><span class="hud-value" id="ds-type">-</span></div>
+        <div class="hud-item"><span class="hud-label">대기 중 요소 수</span><span class="hud-value" id="frontier-count">0</span></div>
+        <div class="hud-item"><span class="hud-label">과거 최고치 (Peak)</span><span class="hud-value" id="max-frontier">0</span></div>
+        <hr style="border:0; border-top:1px dashed #334155; margin: 10px 0;">
+        <div style="color: #cbd5e1; font-size: 13px; font-weight: bold; margin-bottom: 5px;">[ Python 메모리 시뮬레이션 ]</div>
+        <div class="hud-item" style="font-size: 11px;"><span class="hud-label">Visited Set (가입완료)</span><span class="hud-value" id="mem-visited" style="color: #60a5fa;">0 B</span></div>
+        <div class="hud-item" style="font-size: 11px;"><span class="hud-label">Parent Dict (경로추적)</span><span class="hud-value" id="mem-parent" style="color: #94a3b8;">0 B</span></div>
+        <div class="hud-item" style="font-size: 11px;"><span class="hud-label" id="mem-open-label">Open List</span><span class="hud-value" id="mem-open">0 B</span></div>
+        <div class="hud-item"><span class="hud-label">총 사용 메모리</span><span class="hud-value" id="memory-usage" style="color: #f43f5e;">0 KB</span></div>
+    </div>
+
+<script>
+    // 우선순위 큐 (Dijkstra, A*, Greedy 용도)
+    class PriorityQueue {
+        constructor() { this.items = []; }
+        enqueue(element, priority) {
+            let qElement = { elem: element, priority: priority };
+            let contain = false;
+            for (let i = 0; i < this.items.length; i++) {
+                if (this.items[i].priority > qElement.priority) {
+                    this.items.splice(i, 0, qElement);
+                    contain = true; break;
+                }
+            }
+            if (!contain) this.items.push(qElement);
+            return this.items.length;
+        }
+        dequeue() { return this.items.shift(); }
+        isEmpty() { return this.items.length === 0; }
+        get length() { return this.items.length; }
+        get array() { return this.items.map(e => e.elem); }
+    }
+
+    // 1. 평면형(Planar) 랜덤 메쉬 네트워크 생성 (2,000 Nodes)
+    const nodes = new vis.DataSet();
+    const edges = new vis.DataSet();
+    
+    // 화면을 꽉 채우게 분할 (50 * 40 = 2000 노드)
+    const COLS = 50;
+    const ROWS = 40;
+    const SPACING = 55; // 촘촘하게
+    const JITTER = 22;
+
+    let gridIds = new Array(ROWS);
+    for(let r = 0; r < ROWS; r++) gridIds[r] = new Array(COLS);
+    
+    let currentId = 0;
+
+    for(let r = 0; r < ROWS; r++) {
+        for(let c = 0; c < COLS; c++) {
+            let bx = c * SPACING - (COLS * SPACING / 2); // 화면 중앙 강제 정렬 보정을 위해 오프셋
+            let by = r * SPACING - (ROWS * SPACING / 2);
+            
+            // X, Y 좌표에 랜덤한 흩뿌림(Noise) 추가 (이것이 원형이 아닌 자연스런 텍스처를 만듦)
+            let x = bx + (Math.random() - 0.5) * JITTER * 2;
+            let y = by + (Math.random() - 0.5) * JITTER * 2;
+            
+            nodes.add({
+                id: currentId,
+                x: x, 
+                y: y, 
+                shape: 'dot', 
+                size: Math.random() > 0.95 ? 12 : 7, // 가끔 큰 거점 노드 등장
+                color: { background: '#0b1221', border: '#334155' }
+            });
+            
+            gridIds[r][c] = currentId;
+            currentId++;
+        }
+    }
+
+    // 선 겹침(Overlap)을 원천 차단하는 이웃 연결 알고리즘
+    for(let r = 0; r < ROWS; r++) {
+        for(let c = 0; c < COLS; c++) {
+            let u = gridIds[r][c];
+            
+            // 1. 오른쪽으로 연결 (85% 확률 유지하여 가끔 벽이 생기게 함)
+            if (c < COLS - 1 && Math.random() > 0.15) {
+                edges.add({ from: u, to: gridIds[r][c+1], color: { color: '#1e293b' }, width: 1.5 });
+            }
+            // 2. 아래쪽으로 연결
+            if (r < ROWS - 1 && Math.random() > 0.15) {
+                edges.add({ from: u, to: gridIds[r+1][c], color: { color: '#1e293b' }, width: 1.5 });
+            }
+            
+            // 3. 겹침을 방지하는 삼각 분할 (Delaunay Triangulation Style)
+            // 대각선 2개가 X자로 교차하면 겹치므로, 오직 랜덤한 한 방향(/ 혹은 \)만 연결함!
+            if (c < COLS - 1 && r < ROWS - 1) {
+                if (Math.random() > 0.4) { // 대각선 연결 생성 확률 60%
+                    if (Math.random() > 0.5) {
+                        // 우하단 대각선 ( \ 방향 )
+                        edges.add({ from: u, to: gridIds[r+1][c+1], color: { color: '#1e293b' }, width: 1.5 });
+                    } else {
+                        // 좌하단 대각선 ( / 방향 )
+                        edges.add({ from: gridIds[r][c+1], to: gridIds[r+1][c], color: { color: '#1e293b' }, width: 1.5 });
+                    }
+                }
+            }
+        }
+    }
+
+    const container = document.getElementById('mynetwork');
+    const data = { nodes: nodes, edges: edges };
+    
+    // 강제 X/Y 좌표를 사용하므로 렌더링을 잡아먹던 물리 엔진을 깨끗하게 끌 수 있습니다.
+    const options = {
+        nodes: { borderWidth: 1.5, shadow: false },
+        edges: { smooth: false }, // 곡선 끄고 날카로운 직선 기하학 패턴 사용
+        physics: false, // 절대 흔들리거나 깨지지 않음
+        interaction: { hover: true, dragNodes: false, zoomView: true, hideEdgesOnDrag: true }
+    };
+    
+    const network = new vis.Network(container, data, options);
+    
+    network.once("afterDrawing", function() {
+        network.fit(); // 생성 후 화면에 꽉 차게 오토 포커스
+    });
+
+    // ─────────────────────────────────────────────────────────────────
+    // 2. 시작/종료 노드 사용자 마우스 클릭 도구(토글 방식)
+    // ─────────────────────────────────────────────────────────────────
+    let startNodeId = null;
+    let endNodeId = null;
+
+    network.on("click", function(params) {
+        if (anim.running) return; // 실행 중엔 클릭 무력화
+        if (params.nodes.length > 0) {
+            let clicked = params.nodes[0];
+            
+            // 이미 시작점이면 해제
+            if (clicked === startNodeId) {
+                startNodeId = null;
+                document.getElementById('start-node-status').innerText = "미지정";
+                resetGraph();
+            } 
+            // 이미 폭파지점(종료점)이면 해제
+            else if (clicked === endNodeId) {
+                endNodeId = null;
+                document.getElementById('end-node-status').innerText = "미지정";
+                resetGraph();
+            }
+            // 시작점이 없으면 시작점 배정
+            else if (startNodeId === null) {
+                startNodeId = clicked;
+                document.getElementById('start-node-status').innerText = "N" + clicked;
+            }
+            // 시작점이 있는데 종료점이 없으면 종료점 배정
+            else if (endNodeId === null) {
+                endNodeId = clicked;
+                document.getElementById('end-node-status').innerText = "N" + clicked;
+            }
+            
+            checkReady();
+            renderSelectedTargets();
+        }
+    });
+
+    function checkReady() {
+        let btn = document.getElementById('btnStart');
+        if (startNodeId !== null && endNodeId !== null) {
+            btn.style.opacity = "1";
+            btn.style.cursor = "pointer";
+        } else {
+            btn.style.opacity = "0.5";
+            btn.style.cursor = "not-allowed";
+        }
+    }
+
+    function renderSelectedTargets() {
+        // 이미 선택된 색을 유지하기 위해 별환 업데이트
+        if(startNodeId !== null) {
+            nodes.update({ id: startNodeId, color: { background: '#22c55e', border: '#ffffff' }, size: 20, shadow: { color: '#4ade80', size: 20 } });
+        }
+        if(endNodeId !== null) {
+            nodes.update({ id: endNodeId, color: { background: '#ef4444', border: '#ffffff' }, size: 20, shadow: { color: '#f87171', size: 20 } });
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // 2. 디버깅 전용 비동기 스텝 엔진
+    // ─────────────────────────────────────────────────────────────────
+    let anim = { running: false, paused: false, resolveStep: null, delayMs: 200, stopFlag: false };
+
+    function changeSpeed() {
+        let val = document.getElementById("speedSlider").value;
+        anim.delayMs = 1000 - val; 
+    }
+    async function waitStep() {
+        if (anim.stopFlag) return Promise.reject("Stopped");
+        if (anim.paused) {
+            await new Promise(r => anim.resolveStep = r);
+            if (anim.stopFlag) return Promise.reject("Stopped");
+        } else {
+            await new Promise(r => setTimeout(r, anim.delayMs));
+        }
+    }
+
+    function startAlgo() {
+        if (startNodeId === null || endNodeId === null) {
+            alert("시작 지점과 탐색 종료 지점을 마우스로 각각 클릭해서 지정해주세요!");
+            return;
+        }
+
+        if (!anim.running) {
+            anim.running = true;
+            anim.paused = false;
+            anim.stopFlag = false;
+            let algo = document.getElementById('algoSelect').value;
+            runGenericAlgorithm(algo).catch(e => {
+                if(e !== "Stopped") console.error(e);
+            });
+            document.getElementById('status').innerText = "탐색 진행 중...";
+        } else if (anim.paused) {
+            anim.paused = false;
+            if (anim.resolveStep) { anim.resolveStep(); anim.resolveStep = null; }
+            document.getElementById('status').innerText = "실행 중";
+        }
+    }
+
+    function pauseAlgo() {
+        if (anim.running) {
+            anim.paused = true;
+            document.getElementById('status').innerText = "일시 정지";
+        }
+    }
+
+    function stepAlgo() {
+        if (anim.running && anim.paused) {
+            if (anim.resolveStep) { anim.resolveStep(); anim.resolveStep = null; }
+        }
+    }
+
+    function stopAlgo() {
+        anim.stopFlag = true;
+        anim.running = false;
+        anim.paused = false;
+        if (anim.resolveStep) { anim.resolveStep(); anim.resolveStep = null; }
+        document.getElementById('status').innerText = "대기 중";
+        resetGraph();
+    }
+
+    function resetGraph() {
+        let nodeUpdates = [];
+        nodes.forEach(node => {
+            nodeUpdates.push({ id: node.id, color: { background: '#0b1221', border: '#334155' }, shadow: false });
+        });
+        nodes.update(nodeUpdates);
+        
+        let edgeUpdates = [];
+        edges.forEach(edge => {
+            edgeUpdates.push({ id: edge.id, color: { color: '#1e293b' }, width: 1.5 });
+        });
+        edges.update(edgeUpdates);
+        
+        document.getElementById('visited-count').innerText = "0";
+        document.getElementById('current-node').innerText = "-";
+        
+        // 데이터 구조 라벨 초기화
+        document.getElementById('ds-type').innerText = "-";
+        document.getElementById('ds-type').style.color = "#38bdf8";
+        
+        // 메모리 및 큐 초기화
+        document.getElementById('frontier-count').innerText = "0";
+        document.getElementById('max-frontier').innerText = "0";
+        
+        // 메모리 초기화
+        document.getElementById('mem-visited').innerText = "0 B";
+        document.getElementById('mem-parent').innerText = "0 B";
+        document.getElementById('mem-open').innerText = "0 B";
+        document.getElementById('memory-usage').innerText = "0 KB";
+        peakFrontier = 0;
+        
+        // 시작 및 종료점 다시 그리기
+        renderSelectedTargets();
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4. 통합 알고리즘 시각화 엔진 (A*, Dijkstra, BFS, DFS 통합본 유도)
+    // ─────────────────────────────────────────────────────────────────
+    let peakFrontier = 0;
+    
+    function updateHUD(curr, visitedSize, frontierSize, memData) {
+        if (curr !== null) document.getElementById('current-node').innerText = "N" + curr;
+        document.getElementById('visited-count').innerText = visitedSize;
+        document.getElementById('frontier-count').innerText = frontierSize;
+        
+        if (frontierSize > peakFrontier) {
+            peakFrontier = frontierSize;
+            document.getElementById('max-frontier').innerText = peakFrontier;
+        }
+
+        // 파이썬 기반 메모리 상세 렌더링
+        let formatB = (b) => b >= 1024 ? (b/1024).toFixed(1) + " KB" : b + " B";
+        
+        document.getElementById('mem-visited').innerText = formatB(memData.memVisited);
+        document.getElementById('mem-parent').innerText = formatB(memData.memParent);
+        document.getElementById('mem-open').innerText = formatB(memData.memOpen);
+        
+        let totalBytes = memData.memVisited + memData.memParent + memData.memOpen;
+        document.getElementById('memory-usage').innerText = (totalBytes / 1024).toFixed(2) + " KB";
+    }
+
+    function dsConfigure(algo, isGraphSearch, isHeuristic, isIterative) {
+        let name = "Queue", colorHex = "#eab308", memOpenPerItem = 40; // Default
+        
+        if (isGraphSearch && algo === 'BFS') { name = "큐 (collections.deque)"; colorHex = '#eab308'; memOpenPerItem = 40; } // Yellow
+        else if (isGraphSearch && algo === 'DFS') { name = "스택 (list)"; colorHex = '#f97316'; memOpenPerItem = 40; } // Orange
+        else if (isHeuristic) { name = "우선순위 큐 (heapq)"; colorHex = '#a855f7'; memOpenPerItem = 104; } // Purple (Tuple cost overhead)
+        else if (isIterative) { name = "콜 스택 (Recursion)"; colorHex = '#14b8a6'; memOpenPerItem = 432; } // Teal (Stack frame overhead)
+        
+        document.getElementById('ds-type').innerText = name;
+        document.getElementById('ds-type').style.color = colorHex;
+        document.getElementById('mem-open-label').innerText = name.split(' ')[0] + " 오버헤드";
+        
+        return { name: name, hex: colorHex, memPerItem: memOpenPerItem };
+    }
+
+    // 두 점 사이 유클리드 기하학적 거리 (A*, Greedy 용)
+    function getDistance(n1, n2) {
+        let node1 = nodes.get(n1);
+        let node2 = nodes.get(n2);
+        return Math.sqrt(Math.pow(node1.x - node2.x, 2) + Math.pow(node1.y - node2.y, 2));
+    }
+
+    async function processHighlighting(curr, isStart) {
+        // [특명] 현재 탐색 중인 노드는 **마젠타(자홍색)**로 강조!
+        if (!isStart) {
+            nodes.update({ id: curr, color: { background: '#d946ef', border: '#fdf4ff' }, size: 16, shadow: { color: '#d946ef', size: 20 } });
+        }
+        await waitStep();
+        // 방문 완료 처리 (파란색)
+        if (!isStart) {
+            nodes.update({ id: curr, color: { background: '#1e40af', border: '#60a5fa' }, size: 8, shadow: false });
+        }
+    }
+
+    async function endSearch(success, endNode) {
+        if (success) {
+            nodes.update({ id: endNode, color: { background: '#facc15', border: '#ffffff' }, size: 25, shadow: { color: '#eab308', size: 30 } });
+            document.getElementById('status').innerText = "✅ 목표 노드 탐색 성공!";
+        } else {
+            document.getElementById('status').innerText = "❌ 완료 (경로가 없습니다)";
+        }
+        anim.running = false;
+    }
+
+    async function runGenericAlgorithm(algo) {
+        resetGraph();
+        let visited = new Set();
+        let frontier = []; // 스택 또는 큐
+        let pq = new PriorityQueue(); // 다익스트라, A* 용
+        
+        let gScore = {}; // 다익스트라 누적 거리
+        let fScore = {}; // A* 휴리스틱 종합
+        
+        // 알고리즘 유형 및 데이터구조/메모리 식별
+        let isGraphSearch = ['BFS', 'DFS'].includes(algo);
+        let isHeuristic = ['DIJKSTRA', 'GREEDY', 'ASTAR'].includes(algo);
+        let isIterative = ['IDDFS', 'IDASTAR'].includes(algo);
+        let ds = dsConfigure(algo, isGraphSearch, isHeuristic, isIterative);
+        
+        function getMemData(vSize, fLength) {
+            return {
+                memVisited: algo.includes('ID') ? 0 : vSize * 56, // IDDFS는 visited 세트를 깊이 탐색 한계마다 지우므로 휘발성.
+                memParent: algo.includes('ID') ? 0 : vSize * 72,  // Dict 구조에 기록하는 부모 캐싱
+                memOpen: fLength * ds.memPerItem
+            };
+        }
+        
+        // HPA, JPS, TOPO는 개념적 흉내만 냅니다.
+        if (['HPA', 'JPS'].includes(algo)) {
+            alert("입력받은 무작위 그래프에서 Jump Point 나 계층(HPA) 이동은 A* 탐색의 파생형으로 시뮬레이션 됩니다. (그리드 격자 필수 알고리즘)");
+            algo = "ASTAR"; isHeuristic = true;
+        } else if (algo === 'TOPO') {
+            alert("방향성이 없는 그래프이므로, 가장 가까운 노드 위주로 위상(Topological) 순위를 매겨 탐색합니다.");
+            algo = "GREEDY"; isHeuristic = true;
+        }
+        
+        // -------------------------------------------------------------
+        // 표준 탐색 (BFS, DFS)
+        // -------------------------------------------------------------
+        if (isGraphSearch) {
+            frontier.push(startNodeId);
+            visited.add(startNodeId);
+            
+            while (frontier.length > 0) {
+                let curr = algo === 'BFS' ? frontier.shift() : frontier.pop();
+                
+                if (algo === 'DFS' && visited.has(curr) && curr !== startNodeId) continue;
+                if (algo === 'DFS') visited.add(curr);
+                
+                updateHUD(curr, visited.size, frontier.length, getMemData(visited.size, frontier.length));
+                if(curr === endNodeId) return await endSearch(true, curr);
+                
+                await processHighlighting(curr, curr === startNodeId);
+                
+                let neighbors = network.getConnectedNodes(curr);
+                for (let nb of neighbors) {
+                    if (!visited.has(nb)) {
+                        if (algo === 'BFS') visited.add(nb);
+                        frontier.push(nb);
+                        
+                        updateHUD(curr, visited.size, frontier.length, getMemData(visited.size, frontier.length));
+                        
+                        // 자료구조 전용 식별색 적용
+                        if(nb !== endNodeId) nodes.update({ id: nb, color: { background: ds.hex, border: '#ffffff' } });
+                        let edgeIds = network.getConnectedEdges(curr);
+                        for (let eId of edgeIds) {
+                            let edge = edges.get(eId);
+                            if ((edge.from == curr && edge.to == nb) || (edge.to == curr && edge.from == nb)) {
+                                edges.update({ id: eId, color: { color: algo === 'BFS' ? '#0ea5e9' : ds.hex }, width: 3 });
+                            }
+                        }
+                    }
+                }
+            }
+        } 
+        // -------------------------------------------------------------
+        // 가중치 탐색 (Dijkstra, A*, Greedy)
+        // -------------------------------------------------------------
+        else if (isHeuristic) {
+            gScore[startNodeId] = 0;
+            pq.enqueue(startNodeId, 0);
+            
+            while (!pq.isEmpty()) {
+                let curr = pq.dequeue().elem;
+                
+                if (visited.has(curr)) continue;
+                visited.add(curr);
+                
+                updateHUD(curr, visited.size, pq.length, getMemData(visited.size, pq.length));
+                if(curr === endNodeId) return await endSearch(true, curr);
+                
+                await processHighlighting(curr, curr === startNodeId);
+                
+                let neighbors = network.getConnectedNodes(curr);
+                for (let nb of neighbors) {
+                    if (visited.has(nb)) continue;
+                    
+                    let edgeDist = getDistance(curr, nb); // 기하학 거리 기반 가중치
+                    let tentative_gScore = gScore[curr] + edgeDist;
+                    
+                    if (gScore[nb] === undefined || tentative_gScore < gScore[nb]) {
+                        gScore[nb] = tentative_gScore;
+                        
+                        let hScore = getDistance(nb, endNodeId);
+                        let priority = 0;
+                        if (algo === 'DIJKSTRA') priority = gScore[nb];
+                        else if (algo === 'GREEDY') priority = hScore;
+                        else if (algo === 'ASTAR') priority = gScore[nb] + hScore;
+                        
+                        pq.enqueue(nb, priority);
+                        updateHUD(curr, visited.size, pq.length, getMemData(visited.size, pq.length));
+                        
+                        if(nb !== endNodeId) nodes.update({ id: nb, color: { background: ds.hex, border: '#ffffff' } });
+                        let edgeIds = network.getConnectedEdges(curr);
+                        for (let eId of edgeIds) {
+                            let edge = edges.get(eId);
+                            if ((edge.from == curr && edge.to == nb) || (edge.to == curr && edge.from == nb)) {
+                                edges.update({ id: eId, color: { color: ds.hex }, width: 2 });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // -------------------------------------------------------------
+        // 반복 심화 거미줄 탐색 (IDDFS, IDA*)
+        // -------------------------------------------------------------
+        else if (isIterative) {
+            let limit = 0;
+            let found = false;
+            let initialThreshold = algo === 'IDASTAR' ? getDistance(startNodeId, endNodeId) : 1;
+            
+            while (!found && limit < 100000) {
+                // 한계점(Threshold) 증가 애니메이션 느낌
+                // 이 부분을 완전히 재귀적 DFS로 짜기보다 시뮬레이션용 스택 병합을 구현합니다.
+                // (JS 스택 오버플로우 한계 등으로 인해 모의 깊이/비용 제한 반복문 수행)
+                let cutoff = false;
+                visited.clear();
+                let stack = [{ id: startNodeId, depth: 0, cost: 0 }];
+                
+                while(stack.length > 0) {
+                    let st = stack.pop();
+                    let curr = st.id;
+                    
+                    if (curr === endNodeId) return await endSearch(true, curr);
+                    if (visited.has(curr)) continue;
+                    
+                    // IDDFS는 depth 기반, IDA*는 g+h 비용 기반 리미트 적용
+                    let metric = algo === 'IDDFS' ? st.depth : (st.cost + getDistance(curr, endNodeId));
+                    if (metric > initialThreshold) {
+                        cutoff = true; continue; // 한계치 도달로 가지치기
+                    }
+                    
+                    visited.add(curr);
+                    updateHUD(curr, visited.size, stack.length, getMemData(visited.size, stack.length));
+                    await processHighlighting(curr, curr === startNodeId);
+                    
+                    let neighbors = network.getConnectedNodes(curr);
+                    for (let nb of neighbors) {
+                        if (!visited.has(nb)) {
+                            stack.push({ id: nb, depth: st.depth + 1, cost: st.cost + getDistance(curr, nb) });
+                            if(nb !== endNodeId && !visited.has(nb)) nodes.update({ id: nb, color: { background: ds.hex, border: '#ffffff' } });
+                        }
+                    }
+                }
+                
+                if (!cutoff) break; // 개방할 노드가 더이상 없다면 무한루프 방지
+                
+                // 한계치 증가
+                if (algo === 'IDDFS') initialThreshold += 1; // 깊이 1 증가
+                else initialThreshold += 100; // 거리 비용 증가
+                
+                limit++;
+                resetGraph(); // 다음 시도를 위해 맵 초기화
+                // (리셋 후 다시 탐색을 반복하는 진짜 IDDFS의 위력)
+            }
+        }
+        
+        await endSearch(false, null);
+    }
+</script>
+
+</body>
+</html>

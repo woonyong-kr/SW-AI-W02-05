@@ -1,0 +1,26 @@
+{
+    "target_grid_w":    700,
+    "target_grid_h":    580,
+    "max_tile_size":    64,
+    "min_tile_size":    6,
+    "tile_margin":      2,
+    "fps":              60,
+    "step_interval_ms": 50,
+    "hud_width":        220,
+    "colors": {
+        "background":  [10,  12,  20],
+        "unvisited":   [30,  33,  52],
+        "frontier":    [242, 168, 28],
+        "visited":     [45,  110, 195],
+        "wall":        [15,  16,  24],
+        "start":       [46,  204, 113],
+        "end":         [231, 76,  60],
+        "path":        [52,  220, 185],
+        "text_tile":   [255, 255, 255],
+        "text_hud":    [215, 222, 240],
+        "hud_bg":      [14,  16,  26],
+        "hud_border":  [38,  42,  68],
+        "hud_accent":  [108, 153, 255],
+        "hint_text":   [58,  64,  95]
+    }
+}
