@@ -6,18 +6,27 @@ from collections import deque
 
 def solution():
     data = sys.stdin.read().split()
-    vertex = int(data[0])
-    leaf = int(data[1])
-    visited = [0]
-    que = deque(0)
-    count = 0
-    result = {}
-    for i in range(vertex):
-        if count < m:
-            visited.append((0, i))
-            count += 1
+    n = int(data[0])
+    m = int(data[1])
+
+    result = []
+    cont = 0
+    for i in range(1, n):
+        if i <= m:
+            result.append((0, i))
+            count = i
+        else:
+            result.append((count, i))
+            count = i
+    
+    for edge in result:
+        print(f"{edge[0]} {edge[1]}")
 
 
-
+# 0 1 
+# 0 2
+# 0 3
+# 3 4
+# 4 5
 
 solution()
