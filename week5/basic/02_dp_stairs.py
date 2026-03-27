@@ -45,16 +45,26 @@ def climb_stairs(n):
     Returns:
         n번째 계단까지 오르는 방법의 수
     """
-    # TODO: 특별한 경우 처리
-    pass
+
+    if n == 1:
+        return 1
+    if n == 2:
+        return 2
     
-    
-    # TODO: dp 배열 생성 및 초기화
-    pass
-    
-    # TODO: 작은 문제부터 차례로 계산
-    pass
-    
+    v2, v1 = 1, 2
+
+    for _ in range(3, n + 1):
+        v2, v1 = v1, v2 + v1
+
+    return v1
+
+    dp = [0] * (n + 1)
+    dp[1] = 1
+    dp[2] = 2
+
+    for i in range(3, n + 1):
+        dp[i] = dp[i - 1] + dp[i - 2]
+
     return dp[n]
 
 # 테스트 케이스
