@@ -46,17 +46,17 @@ def climb_stairs(n):
         n번째 계단까지 오르는 방법의 수
     """
 
-    if n == 1:
+    if n == 1: 
         return 1
-    if n == 2:
+    if n == 2: 
         return 2
-    
-    v2, v1 = 1, 2
+
+    a, b = 1, 2 
 
     for _ in range(3, n + 1):
-        v2, v1 = v1, v2 + v1
+        a, b = b, a + b
 
-    return v1
+    return b
 
     dp = [0] * (n + 1)
     dp[1] = 1
