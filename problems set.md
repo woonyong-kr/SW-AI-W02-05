@@ -96,6 +96,13 @@ Week4
 
 
 Week5
+### Basic
+
+- ✅ DP - 피보나치 (하향식) | [풀이](week5/basic/01_dp_fibonacci.py)
+- ✅ DP - 계단 오르기 (상향식) | [풀이](week5/basic/02_dp_stairs.py)
+- ✅ 그리디 - 거스름돈 | [풀이](week5/basic/03_greedy_coin.py)
+- ✅ 그리디 - 회의실 배정 | [풀이](week5/basic/04_greedy_meeting.py)
+
 ### 문제풀이 - 난이도 하
 
 - ✅ [[DP] 피보나치 수 2 (백준 브론즈 1)](https://www.acmicpc.net/problem/2748) | [풀이](week5/problem-solving/난이도하_DP_피보나치수2_브론즈1.py)
