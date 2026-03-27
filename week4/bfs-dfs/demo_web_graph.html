@@ -5,97 +5,116 @@
     <title>알고리즘 웹 시각화</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         * { box-sizing: border-box; }
         body {
             margin: 0; padding: 0;
-            background: #f2f4f6; color: #191f28;
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f0f2f5;
+            color: #191f28;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             overflow: hidden; display: flex; flex-direction: column; height: 100vh;
         }
+        /* ── Header ── */
         #header {
-            padding: 10px 18px 8px;
+            padding: 10px 20px 8px;
             background: #ffffff;
-            border-bottom: 1px solid #e5e8eb;
-            display: flex; flex-direction: column; gap: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            border-bottom: 1px solid #eaecf0;
+            display: flex; flex-direction: column; gap: 7px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
             z-index: 10; width: 100%;
         }
-        .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .toolbar-divider { width: 1px; height: 28px; background: #e5e8eb; margin: 0 4px; flex-shrink: 0; }
+        .toolbar { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+        .toolbar-divider { width: 1px; height: 24px; background: #eaecf0; margin: 0 4px; flex-shrink: 0; }
+        /* ── Global controls ── */
         select, button, input[type=number] {
-            background: #f2f4f6; color: #4e5968; border: none;
-            padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
-            transition: 0.15s ease-in-out; white-space: nowrap;
+            background: #f5f6fa; color: #4e5968;
+            border: 1.5px solid #eaecf0;
+            padding: 7px 13px; border-radius: 9px;
+            font-size: 12.5px; font-weight: 600; cursor: pointer;
+            transition: all 0.14s ease-in-out; white-space: nowrap;
+            font-family: inherit;
         }
-        select:hover, input:hover, button:hover { background: #e5e8eb; }
-        #btnStart { background: #3182f6; color: white; }
-        #btnStart:hover { background: #1b64da; }
-        .btn-red { background: #f04452; color: white; }
-        .btn-red:hover { background: #d73a46; }
-        .btn-green { background: #00c471; color: white; }
-        .btn-green:hover { background: #00a660; }
-        .btn-orange { background: #ff7c3a; color: white; }
-        .btn-orange:hover { background: #e06020; }
-        .toggle-btn { background: #f2f4f6; color: #8b95a1; border: 1.5px solid #d1d6db; }
-        .toggle-btn:hover { background: #e5e8eb; }
+        select:hover, input:hover, button:hover { background: #eaecf0; border-color: #d1d6db; }
+        /* ── Accent buttons ── */
+        #btnStart  { background: #3182f6; color: #fff; border-color: #3182f6; }
+        #btnStart:hover  { background: #1b64da; border-color: #1b64da; }
+        .btn-red   { background: #f04452; color: #fff; border-color: #f04452; }
+        .btn-red:hover   { background: #d73a46; border-color: #d73a46; }
+        .btn-orange{ background: #ff6b35; color: #fff; border-color: #ff6b35; }
+        .btn-orange:hover{ background: #e55a25; border-color: #e55a25; }
+        /* ── Toggle button ── */
+        .toggle-btn { background: #f5f6fa; color: #8b95a1; border: 1.5px solid #eaecf0; }
+        .toggle-btn:hover { background: #eaecf0; }
         .toggle-btn.active { background: #e8f3ff; color: #3182f6; border-color: #3182f6; }
-        .slider-box { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #4e5968; }
-        input[type=number] { font-size: 13px; font-weight: 600; color: #191f28; background: #f2f4f6; text-align: center; }
-        .mode-label { font-size: 12px; color: #4e5968; font-weight: 700; white-space: nowrap; }
-        .tab-group { display: flex; background: #f2f4f6; border-radius: 10px; padding: 3px; gap: 3px; }
-        .tab-btn { padding: 6px 12px; background: transparent; color: #8b95a1; font-size: 12px; font-weight: 600; border-radius: 7px; transition: 0.2s all; }
-        .tab-btn:hover { background: #e5e8eb; color: #4e5968; }
-        .tab-btn.active { background: #ffffff; color: #3182f6; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-        #mynetwork { flex: 1; width: 100%; position: relative; overflow: hidden; }
+        /* ── Delay input ── */
+        .slider-box { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #8b95a1; }
+        input[type=number] { font-size: 12.5px; font-weight: 600; color: #191f28; background: #f5f6fa; text-align: center; width: 60px; }
+        .mode-label { font-size: 11.5px; color: #8b95a1; font-weight: 700; white-space: nowrap; letter-spacing: 0.2px; }
+        /* ── Tab group ── */
+        .tab-group { display: flex; background: #f0f2f5; border-radius: 10px; padding: 3px; gap: 2px; }
+        .tab-btn {
+            padding: 5px 11px; background: transparent; color: #8b95a1;
+            font-size: 12px; font-weight: 600; border-radius: 7px;
+            border: 1.5px solid transparent; transition: all 0.15s;
+        }
+        .tab-btn:hover { background: #eaecf0; color: #4e5968; border-color: transparent; }
+        .tab-btn.active { background: #ffffff; color: #3182f6; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-color: transparent; }
+        /* ── Canvas ── */
+        #mynetwork { flex: 1; width: 100%; position: relative; overflow: hidden; background: #f0f2f5; }
+        /* ── HUD ── */
         #hud {
             position: absolute; bottom: 24px; left: 24px;
-            background: rgba(255,255,255,0.97); padding: 20px;
-            border-radius: 16px; box-shadow: 0 12px 32px rgba(0,0,0,0.1); min-width: 210px;
-            border: 1px solid #f2f4f6; backdrop-filter: blur(8px);
+            background: rgba(255,255,255,0.98); padding: 18px 20px;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px rgba(49,130,246,0.10), 0 2px 8px rgba(0,0,0,0.07);
+            min-width: 210px;
+            border: 1px solid rgba(49,130,246,0.12);
+            backdrop-filter: blur(12px);
         }
-        .hud-item { display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center; }
-        .hud-label { color: #8b95a1; font-size: 12px; font-weight: 600; }
-        .hud-value { font-weight: 700; color: #191f28; font-size: 14px; margin-left: 16px; text-align: right; }
-        hr { border: 0; border-top: 1px solid #e5e8eb; margin: 12px 0; }
-        .hud-section-title { font-size: 10px; font-weight: 700; color: #b0b8c1; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px; }
-        #flagBadges { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; min-height: 4px; }
+        .hud-item { display: flex; justify-content: space-between; margin-bottom: 7px; align-items: center; }
+        .hud-label { color: #b0b8c1; font-size: 11px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; }
+        .hud-value { font-weight: 800; color: #191f28; font-size: 14px; margin-left: 14px; text-align: right; }
+        hr { border: 0; border-top: 1px solid #f0f2f5; margin: 10px 0; }
+        .hud-section-title { font-size: 9.5px; font-weight: 800; color: #d1d6db; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 7px; }
+        #flagBadges { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; min-height: 2px; }
         .badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
         .badge-8dir { background: #e8f3ff; color: #3182f6; }
         .badge-directed { background: #fff0e0; color: #f97316; }
-        .badge-heatmap { background: #fce8fb; color: #c026d3; }
-
-        /* Results Overlay */
+        /* ── Results overlay ── */
         #resultsOverlay {
             display: none; position: absolute; inset: 0;
-            background: rgba(25,31,40,0.45); z-index: 100;
+            background: rgba(25,31,40,0.50); z-index: 100;
             align-items: center; justify-content: center;
+            backdrop-filter: blur(4px);
         }
         #resultsOverlay.visible { display: flex; }
         #resultsPanel {
-            background: #ffffff; border-radius: 20px;
-            padding: 32px 36px; min-width: 320px;
-            box-shadow: 0 24px 60px rgba(0,0,0,0.2);
+            background: #ffffff; border-radius: 22px;
+            padding: 32px 36px; min-width: 330px;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.22);
         }
-        #resultsPanel h2 { margin: 0 0 20px; font-size: 18px; color: #191f28; }
-        .res-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f2f4f6; }
+        #resultsPanel h2 { margin: 0 0 20px; font-size: 19px; color: #191f28; font-weight: 800; }
+        .res-row { display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid #f5f6fa; }
         .res-row:last-of-type { border-bottom: none; }
-        .res-key { font-size: 13px; color: #8b95a1; font-weight: 600; }
-        .res-val { font-size: 15px; color: #191f28; font-weight: 700; }
+        .res-key { font-size: 12.5px; color: #b0b8c1; font-weight: 600; }
+        .res-val { font-size: 15px; color: #191f28; font-weight: 800; }
         .res-found { color: #00c471; }
         .res-notfound { color: #f04452; }
-        #closeResults { margin-top: 20px; width: 100%; background: #3182f6; color: white; border: none; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; }
+        #closeResults { margin-top: 22px; width: 100%; background: #3182f6; color: white; border: none;
+            padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; }
         #closeResults:hover { background: #1b64da; }
-
-        /* Legend */
+        /* ── Legend ── */
         #legend {
             position: absolute; bottom: 24px; right: 24px;
-            background: rgba(255,255,255,0.97); padding: 14px 16px;
-            border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-            border: 1px solid #f2f4f6; font-size: 11px; font-weight: 600;
+            background: rgba(255,255,255,0.98); padding: 14px 18px;
+            border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.09);
+            border: 1px solid #eaecf0; font-size: 11px; font-weight: 600;
         }
         .leg-item { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; color: #4e5968; }
         .leg-item:last-child { margin-bottom: 0; }
-        .leg-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+        .leg-dot { width: 13px; height: 13px; border-radius: 3px; flex-shrink: 0; }
+
     </style>
 </head>
 <body>
@@ -135,7 +154,8 @@
         <div class="tab-group" id="modeTabs">
             <button class="tab-btn active" data-mode="TARGET" onclick="setMode('TARGET')">시작/도착</button>
             <button class="tab-btn" data-mode="WALL" onclick="setMode('WALL')">벽</button>
-            <button class="tab-btn" data-mode="SWAMP" onclick="setMode('SWAMP')">늪지 (×10 가중치)</button>
+            <button class="tab-btn" data-mode="WEIGHT_UP" onclick="setMode('WEIGHT_UP')">+ 가중치</button>
+            <button class="tab-btn" data-mode="WEIGHT_DN" onclick="setMode('WEIGHT_DN')">- 가중치</button>
         </div>
         <div class="toolbar-divider"></div>
         <span class="mode-label">맵 크기:</span>
@@ -151,8 +171,6 @@
         <div class="toolbar-divider"></div>
         <span class="mode-label">옵션:</span>
         <button id="btn8dir" class="toggle-btn" onclick="toggle8Dir()">8방향 이동</button>
-
-        <button id="btnHeatmap" class="toggle-btn" onclick="toggleHeatmap()">히트맵</button>
     </div>
 </div>
 
@@ -200,10 +218,12 @@
     <div class="leg-item"><div class="leg-dot" style="background:#ff7183"></div>현재 탐색</div>
     <div class="leg-item"><div class="leg-dot" style="background:#e8f3ff;border:1px solid #b1d6ff"></div>방문 완료</div>
     <div class="leg-item"><div class="leg-dot" style="background:#3182f6"></div>최적 경로</div>
-    <div class="leg-item"><div class="leg-dot" style="background:#86efac;border:1px solid #22c55e"></div>MST 노드</div>
     <div class="leg-item"><div class="leg-dot" style="background:#fbbf24"></div>양방향 교점</div>
     <div class="leg-item"><div class="leg-dot" style="background:#4e5968"></div>벽 (Wall)</div>
-    <div class="leg-item"><div class="leg-dot" style="background:#ffb524"></div>늪지 (×10)</div>
+    <div class="leg-item" style="border-top:1px solid #eaecf0;padding-top:5px;margin-top:3px"><div class="leg-dot" style="background:rgb(219,234,254);border:1px solid rgb(150,170,240)"></div>+가중치 2 (파랑 연)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:rgb(33,68,212);border:1px solid rgb(0,30,180)"></div>+가중치 10 (파랑 진)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:rgb(254,226,226);border:1px solid rgb(230,180,180)"></div>-가중치 1 (빨강 연)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:rgb(153,27,27);border:1px solid rgb(120,0,0)"></div>-가중치 10 (빨강 진)</div>
 </div>
 
 <script>
@@ -214,7 +234,7 @@ let anim = { running: false, paused: false, resolveStep: null, delayMs: 50, stop
 let currentMode = 'TARGET';
 let eightDir = false;
 let directedMode = false;
-let heatmapMode = false;
+
 let visitOrderMap = new Map();
 let visitCounter = 0;
 let peakFrontier = 0;
@@ -290,9 +310,10 @@ function buildGraph() {
             let y = -(r * SPACING - (ROWS * SPACING / 2));
             newNodes.push({
                 id, x, y, shape: 'box',
-                color: { background: '#ffffff', border: '#e5e8eb' },
+                color: { background: '#ffffff', border: '#eaecf0' },
                 isWall: false, costMulti: 1,
                 label: `(${c},${r})`,
+                font: { size: 10, color: '#191f28', bold: false, strokeWidth: 3, strokeColor: '#fff' },
                 title: `ID:${id}  Grid[${r}][${c}]`
             });
             gridIds[r][c] = id++;
@@ -321,7 +342,7 @@ const options = {
         shape: 'box', margin: { top: 15, bottom: 15, left: 1, right: 1 },
         widthConstraint: 44, shapeProperties: { borderRadius: 4 },
         borderWidth: 1.5, shadow: false,
-        font: { size: 10, color: '#191f28', strokeWidth: 3, strokeColor: '#ffffff', bold: true, face: 'monospace', align: 'center', multi: false }
+        font: { size: 10, color: '#191f28', strokeWidth: 3, strokeColor: '#ffffff', bold: false, face: 'monospace', align: 'center', multi: false }
     },
     edges: { smooth: false, arrows: { to: { enabled: false } } },
     physics: false,
@@ -330,22 +351,34 @@ const options = {
 const network = new vis.Network(container, { nodes, edges }, options);
 
 let labelsVisible = true;
+
+function applyLabelVisibility(visible) {
+    if (labelsVisible === visible) return;
+    labelsVisible = visible;
+    // setOptions 대신 노드 개별 업데이트 — 노드별 font 설정 보존
+    let upd = [];
+    nodes.forEach(n => {
+        upd.push({ id: n.id,
+            font: { size: 10, color: visible ? '#191f28' : 'rgba(0,0,0,0)', bold: false,
+                    strokeWidth: visible ? 3 : 0, strokeColor: '#fff' }
+        });
+    });
+    nodes.update(upd);
+}
+
 network.on('zoom', () => {
     let s = network.getScale();
-    if (s > 0.85 && !labelsVisible) {
-        labelsVisible = true;
-        network.setOptions({ nodes: { font: { color: '#191f28', strokeWidth: 3, strokeColor: '#ffffff', bold: true } } });
-    } else if (s <= 0.85 && labelsVisible) {
-        labelsVisible = false;
-        network.setOptions({ nodes: { font: { color: 'rgba(0,0,0,0.01)', strokeWidth: 0 } } });
-    }
+    if (s > 0.5 && !labelsVisible) applyLabelVisibility(true);
+    else if (s <= 0.5 && labelsVisible) applyLabelVisibility(false);
 });
+
 network.once('afterDrawing', () => {
     network.fit();
     setTimeout(() => {
         let s = network.getScale();
-        if (s <= 0.85) { labelsVisible = false; network.setOptions({ nodes: { font: { color: 'rgba(0,0,0,0.01)', strokeWidth: 0 } } }); }
-    }, 100);
+        if (s <= 0.5) applyLabelVisibility(false);
+        else labelsVisible = true; // 이미 true, 노드는 buildGraph에서 올바르게 설정됨
+    }, 150);
 });
 setTimeout(() => buildGraph(), 100);
 
@@ -377,7 +410,10 @@ function getEdgeCost(u, v) {
     let r2 = Math.floor(v / COLS), c2 = v % COLS;
     let dist = Math.sqrt((c1-c2)**2 + (r1-r2)**2);
     let vNode = nodes.get(v);
-    return dist * (vNode ? vNode.costMulti : 1);
+    let w = vNode ? vNode.costMulti : 1;
+    // costMulti: 1=default(×1), positive=more expensive, negative=cheaper(bonus)
+    // All weights are multipliers on the base distance; negative adds a negative offset
+    return dist * Math.max(0.01, w);
 }
 
 function heuristic(a, b) {
@@ -397,6 +433,7 @@ function setMode(mode) {
 }
 
 let dragMode = null, isRightDrag = false, rx = 0, ry = 0;
+let weightPaintedNodes = new Set(); // 현재 드래그 세션에서 가중치를 이미 수정한 노드 추적
 
 function paintNode(nodeId, mode) {
     if (nodeId === startNodeId || nodeId === endNodeId) return;
@@ -405,10 +442,29 @@ function paintNode(nodeId, mode) {
     let changed = false;
     if (mode === 'WALL') {
         if (dragMode === 'BUILD' && !n.isWall) { n.isWall = true; n.costMulti = 1; n.color = { background: '#4e5968', border: '#333d4b' }; changed = true; }
-        else if (dragMode === 'ERASE' && n.isWall) { n.isWall = false; n.color = { background: '#ffffff', border: '#e5e8eb' }; changed = true; }
-    } else if (mode === 'SWAMP') {
-        if (dragMode === 'BUILD' && n.costMulti === 1) { n.isWall = false; n.costMulti = 10; n.color = { background: '#ffb524', border: '#e89500' }; changed = true; }
-        else if (dragMode === 'ERASE' && n.costMulti > 1) { n.costMulti = 1; n.color = { background: '#ffffff', border: '#e5e8eb' }; changed = true; }
+        else if (dragMode === 'ERASE' && n.isWall) { n.isWall = false; n.color = weightColor(n.costMulti); changed = true; }
+    } else if (mode === 'WEIGHT_UP') {
+        if (!n.isWall) {
+            let cur = n.costMulti || 1;
+            // skip 0: jump from -1 to 1
+            let next = cur === -1 ? 1 : Math.min(10, cur + 1);
+            n.costMulti = next;
+            n.color = weightColor(next);
+            let c = n.id % COLS, r = Math.floor(n.id / COLS);
+            n.label = next !== 1 ? `(${c},${r})\n${next > 0 ? '+' : ''}${next}x` : `(${c},${r})`;
+            changed = true;
+        }
+    } else if (mode === 'WEIGHT_DN') {
+        if (!n.isWall) {
+            let cur = n.costMulti || 1;
+            // skip 0: jump from 1 to -1
+            let next = cur === 1 ? -1 : Math.max(-10, cur - 1);
+            n.costMulti = next;
+            n.color = weightColor(next);
+            let c = n.id % COLS, r = Math.floor(n.id / COLS);
+            n.label = next !== 1 ? `(${c},${r})\n${next > 0 ? '+' : ''}${next}x` : `(${c},${r})`;
+            changed = true;
+        }
     }
     if (changed) nodes.update(n);
 }
@@ -431,13 +487,14 @@ network.on('click', params => {
 container.addEventListener('mousedown', e => {
     if (e.button === 2) { isRightDrag = true; rx = e.clientX; ry = e.clientY; container.style.cursor = 'grabbing'; e.preventDefault(); }
     else if (e.button === 0 && !anim.running && currentMode !== 'TARGET') {
+        weightPaintedNodes.clear(); // 새 드래그 시작시 초기화
         let rect = container.getBoundingClientRect();
         let nodeId = network.getNodeAt({ x: e.clientX - rect.left, y: e.clientY - rect.top });
         if (nodeId !== undefined) {
             let n = nodes.get(nodeId);
             if (currentMode === 'WALL') dragMode = n.isWall ? 'ERASE' : 'BUILD';
-            if (currentMode === 'SWAMP') dragMode = (n.costMulti > 1) ? 'ERASE' : 'BUILD';
             paintNode(nodeId, currentMode);
+            if (currentMode === 'WEIGHT_UP' || currentMode === 'WEIGHT_DN') weightPaintedNodes.add(nodeId);
         }
     }
 });
@@ -449,12 +506,17 @@ container.addEventListener('mousemove', e => {
     } else if (e.buttons === 1 && !anim.running && currentMode !== 'TARGET') {
         let rect = container.getBoundingClientRect();
         let nodeId = network.getNodeAt({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-        if (nodeId !== undefined) paintNode(nodeId, currentMode);
+        if (nodeId !== undefined) {
+            // 가중치 모드: 이미 이번 드래그에서 처리한 노드는 건너짜 (1칸당 1회만 적용)
+            if ((currentMode === 'WEIGHT_UP' || currentMode === 'WEIGHT_DN') && weightPaintedNodes.has(nodeId)) return;
+            paintNode(nodeId, currentMode);
+            if (currentMode === 'WEIGHT_UP' || currentMode === 'WEIGHT_DN') weightPaintedNodes.add(nodeId);
+        }
     }
 });
 window.addEventListener('mouseup', e => {
     if (e.button === 2) { isRightDrag = false; container.style.cursor = 'default'; }
-    else if (e.button === 0) dragMode = null;
+    else if (e.button === 0) { dragMode = null; weightPaintedNodes.clear(); }
 });
 
 // ───────────────────────────────────────
@@ -526,10 +588,11 @@ function resetGraph() {
         let clr = { background: '#ffffff', border: '#e5e8eb' };
         let sz = 16;
         if (n.isWall) { clr = { background: '#4e5968', border: '#333d4b' }; sz = 14; }
-        else if (n.costMulti > 1) { clr = { background: '#ffb524', border: '#e89500' }; sz = 14; }
+        else if (n.costMulti !== 1) { clr = weightColor(n.costMulti); sz = 14; }
         let c = n.id % COLS, r = Math.floor(n.id / COLS);
-        upd.push({ id: n.id, label: `(${c},${r})`, size: sz, color: clr, shadow: false,
-            font: { size: 10, color: labelsVisible ? '#191f28' : 'rgba(0,0,0,0.01)', bold: false, strokeWidth: labelsVisible ? 3 : 0, strokeColor: '#fff' } });
+        let lbl = n.costMulti !== 1 ? `(${c},${r})\n${n.costMulti > 0 ? '+' : ''}${n.costMulti}x` : `(${c},${r})`;
+        upd.push({ id: n.id, label: lbl, size: sz, color: clr, shadow: false,
+            font: { size: 10, color: labelsVisible ? '#191f28' : 'rgba(0,0,0,0)', bold: false, strokeWidth: labelsVisible ? 3 : 0, strokeColor: '#fff' } });
     });
     nodes.update(upd);
 
@@ -554,7 +617,7 @@ function resetGraph() {
     document.getElementById('lbl-frontier').innerText = '대기 요소 수';
     peakFrontier = 0;
     renderSelectedTargets();
-    if (heatmapMode && visitOrderMap.size > 0) setTimeout(applyHeatmap, 30);
+
 }
 
 // ───────────────────────────────────────
@@ -590,7 +653,7 @@ function updateFlagBadges() {
     let html = '';
     if (eightDir) html += '<span class="badge badge-8dir">8방향</span>';
     if (directedMode) html += '<span class="badge badge-directed">방향 그래프</span>';
-    if (heatmapMode) html += '<span class="badge badge-heatmap">히트맵</span>';
+
     document.getElementById('flagBadges').innerHTML = html;
 }
 function toggle8Dir() {
@@ -603,26 +666,35 @@ function toggleDirected() {
     directedMode = false;
     network.setOptions({ edges: { arrows: { to: { enabled: false } } } });
 }
-function toggleHeatmap() {
-    heatmapMode = !heatmapMode;
-    document.getElementById('btnHeatmap').classList.toggle('active', heatmapMode);
-    updateFlagBadges();
-    if (heatmapMode && visitOrderMap.size > 0) applyHeatmap();
-    else if (!heatmapMode) resetGraph();
-}
-function applyHeatmap() {
-    if (!heatmapMode || visitOrderMap.size === 0) return;
-    let max = visitCounter || 1;
-    let upd = [];
-    visitOrderMap.forEach((order, id) => {
-        let t = order / max;
-        let r = Math.round(30 + t * 220);
-        let g = Math.round(20 + (1 - Math.abs(t - 0.5) * 2) * 120);
-        let b = Math.round(30 + (1 - t) * 220);
-        upd.push({ id, color: { background: `rgb(${r},${g},${b})`, border: `rgb(${Math.max(0,r-20)},${Math.max(0,g-10)},${Math.max(0,b-20)})` } });
-    });
-    nodes.update(upd);
-    renderSelectedTargets();
+// ───────────────────────
+// 가중치 색상 계산
+// ───────────────────────
+function weightColor(w) {
+    if (w === 1) return { background: '#ffffff', border: '#eaecf0' };
+
+    if (w > 1) {
+        // 양수: 1(연한 파랑) → 10(진한 파랑/남색)
+        let t = (w - 1) / 9; // 0.0 ~ 1.0
+        // Toss 블루 계열: #dbeafe(연) → #1d4ed8(진)
+        let r = Math.round(219 - t * 186); // 219 → 33
+        let g = Math.round(234 - t * 166); // 234 → 68
+        let b = Math.round(254 - t * 42);  // 254 → 212
+        let br = Math.max(0, r - 30);
+        let bg = Math.max(0, g - 40);
+        let bb = Math.max(0, b - 30);
+        return { background: `rgb(${r},${g},${b})`, border: `rgb(${br},${bg},${bb})` };
+    } else {
+        // 음수: -1(연한 빨강) → -10(진한 빨강/크림슨)
+        let t = (Math.abs(w) - 1) / 9; // 0.0 ~ 1.0
+        // Toss 레드 계열: #fee2e2(연) → #991b1b(진)
+        let r = Math.round(254 - t * 101); // 254 → 153
+        let g = Math.round(226 - t * 199); // 226 → 27
+        let b = Math.round(226 - t * 199); // 226 → 27
+        let br = Math.max(0, r - 20);
+        let bg = Math.max(0, g - 20);
+        let bb = Math.max(0, b - 20);
+        return { background: `rgb(${r},${g},${b})`, border: `rgb(${br},${bg},${bb})` };
+    }
 }
 
 // ───────────────────────────────────────
@@ -649,7 +721,8 @@ const DS_CFG = {
     BIDIR_BFS:   { name: '양방향 큐 ×2',        color: '#06b6d4', vB: 56, pB: 72, oB: 40 },
     BIDIR_ASTAR: { name: '양방향 PQ ×2',        color: '#8b5cf6', vB: 56, pB: 72, oB: 104 },
     IDDFS:       { name: '콜 스택 (재귀)',       color: '#14b8a6', vB: 0,  pB: 0,  oB: 432 },
-    IDASTAR:     { name: '콜 스택 (재귀)',       color: '#14b8a6', vB: 0,  pB: 0,  oB: 432 }
+    IDASTAR:     { name: '콜 스택 (재귀)',       color: '#14b8a6', vB: 0,  pB: 0,  oB: 432 },
+    BELLMAN:     { name: '거리 배열 (array)',     color: '#f43f5e', vB: 8,  pB: 72, oB: 0   }
 };
 
 function setupDS(algo) {
@@ -721,7 +794,6 @@ async function finishSearch(success, endNode, cameFrom) {
     algoStats.visited = parseInt(document.getElementById('visited-count').innerText) || 0;
     algoStats.peak = peakFrontier;
     anim.running = false;
-    if (heatmapMode) applyHeatmap();
     showResults();
 }
 
@@ -1023,6 +1095,47 @@ async function runAlgorithm(algo) {
             if (!cutoff) break;
             threshold = nextT; resetGraph();
         }
+        return await finishSearch(false, null, null);
+    }
+
+    // ────────── 벨만-포드 ──────────
+    if (algo === 'BELLMAN') {
+        let nodeIds = [...nodes.getIds()].filter(id => !nodes.get(id).isWall);
+        let dist = {}, cameFrom = {};
+        for (let id of nodeIds) dist[id] = Infinity;
+        dist[startNodeId] = 0;
+
+        // 모든 간선 수집
+        let edgeList = [];
+        for (let id of nodeIds) {
+            for (let nb of getNeighbors(id)) {
+                let n = nodes.get(nb);
+                if (!n || n.isWall) continue;
+                edgeList.push({ u: id, v: nb, w: getEdgeCost(id, nb) });
+            }
+        }
+
+        const V = nodeIds.length;
+        for (let i = 0; i < V - 1; i++) {
+            let relaxed = false;
+            for (let { u, v, w } of edgeList) {
+                if (dist[u] === Infinity) continue;
+                if (dist[u] + w < dist[v]) {
+                    dist[v] = dist[u] + w;
+                    cameFrom[v] = u;
+                    relaxed = true;
+                    hlEdge(u, v, DS_CFG.BELLMAN.color, 2, `d:${dist[v].toFixed(1)}`);
+                    markFrontier(v, DS_CFG.BELLMAN.color);
+                    visitOrderMap.set(v, visitCounter++);
+                    updateHUD(v, Object.keys(cameFrom).length, V - i,
+                        mem(Object.keys(cameFrom).length, V - i));
+                    await waitStep();
+                }
+            }
+            if (!relaxed) break; // 더 이상 완화 없으면 조기 종료
+        }
+
+        if (dist[endNodeId] < Infinity) return await finishSearch(true, endNodeId, cameFrom);
         return await finishSearch(false, null, null);
     }
 
