@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Week4 문제 채점 스크립트
+Week5 문제 채점 스크립트
 """
 
 import sys
@@ -8,12 +8,13 @@ import subprocess
 import os
 from pathlib import Path
 
-# Week4 문제 목록
+# Week5 문제 목록
 PROBLEMS = {
     "01_dp_fibonacci": "DP - 피보나치 (하향식)",
     "02_dp_stairs": "DP - 계단 오르기 (상향식)",
     "03_greedy_coin": "그리디 - 거스름돈",
     "04_greedy_meeting": "그리디 - 회의실 배정",
+    "05_a_star": "A* - 최단 경로 탐색",
 }
 
 def check_solution(problem_file):
@@ -92,7 +93,7 @@ def main():
     # 모든 문제 채점
     if sys.argv[1] == '--all':
         print("=" * 60)
-        print("Week4 전체 문제 채점")
+        print("Week5 전체 문제 채점")
         print("=" * 60)
         print()
         
